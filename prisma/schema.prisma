@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  APPROVED
+  REJECTED
+}
+
+enum LoanStatus {
+  PENDING
+  APPROVED
+  ACTIVE
+  COMPLETED
+  DEFAULTED
+}
+
+enum RepaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+model Borrower {
+  id         String   @id @default(cuid())
+  name       String
+  phone      String
+  address    String
+  aadhaar    String   @unique
+  occupation String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  leads Lead[]
+  loans Loan[]
+}
+
+model Lead {
+  id         String     @id @default(cuid())
+  borrowerId String
+  status     LeadStatus @default(NEW)
+  notes      String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  borrower Borrower @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
+}
+
+model Loan {
+  id           String     @id @default(cuid())
+  borrowerId   String
+  amount       Float
+  interestRate Float
+  tenureMonths Int
+  emiAmount    Float
+  status       LoanStatus @default(PENDING)
+  approvalDate DateTime?
+  startDate    DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  borrower   Borrower    @relation(fields: [borrowerId], references: [id], onDelete: Cascade)
+  repayments Repayment[]
+}
+
+model Repayment {
+  id         String          @id @default(cuid())
+  loanId     String
+  emiNumber  Int
+  dueDate    DateTime
+  amount     Float
+  paidAmount Float           @default(0)
+  paidDate   DateTime?
+  status     RepaymentStatus @default(PENDING)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  loan Loan @relation(fields: [loanId], references: [id], onDelete: Cascade)
+}
